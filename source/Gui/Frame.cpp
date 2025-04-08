@@ -1,4 +1,5 @@
 #include "Frame.h"
+#include <algorithm>
 
 Frame::Frame(sf::RenderWindow& window, const Udim2& size)
 {

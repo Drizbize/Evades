@@ -1,16 +1,15 @@
 #include "game.h"
 
-Game::Game(int x, int y)
-	: window(std::make_shared<sf::RenderWindow>(sf::VideoMode(x, y), GAME_NAME, sf::Style::Close | sf::Style::Titlebar)),
+Game::Game(uint x, uint y)
+	: window(std::make_shared<sf::RenderWindow>(sf::VideoMode({x, y}), GAME_NAME, sf::Style::Close | sf::Style::Titlebar)),
 	fpsShowTimer(FPS_SHOW_UPDATE, &dt)
 {
 	srand(time(0));
 
 	Service<LogManager>::build(LogLevel::Debug);
-
 	Get<LogManager>().addDriver(new ConsoleLogDriver); // deletes in LogManager
 
-
+	m_clock.start();
 }
 
 Game::~Game()
@@ -30,9 +29,7 @@ void Game::render()
 
 void Game::update_dt()
 {
-	m_currentTime = m_clock.getElapsedTime();
-	dt = (m_currentTime.asSeconds() - m_previousTime.asSeconds());
-	m_previousTime = m_currentTime;
+	dt = m_clock.restart().asSeconds();
 
 	float fps = 1.0f / dt;
 	if (fpsShowTimer.isEnded())

@@ -1,5 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.8)
-
+﻿cmake_minimum_required(VERSION 3.10)
 project(Evades)
 
 set(CMAKE_SUPPRESS_REGENERATION true)
@@ -10,33 +9,22 @@ set(RESOURCES_DEST_DIR "${CMAKE_CURRENT_BINARY_DIR}/resources")
 file(GLOB_RECURSE _source_library CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/include/*")
 file(GLOB_RECURSE _source_s_list CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/source/*")
 
-add_executable (Evades
-	${_source_library}
-	${_source_s_list}
-	"main.cpp"
+add_executable(Evades
+    ${_source_library}
+    ${_source_s_list}
+    "main.cpp"
 )
 
-# Link SFML libraries based on build type
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_link_libraries(Evades
-        ${CMAKE_SOURCE_DIR}/library/sfml-audio-d.lib
-        ${CMAKE_SOURCE_DIR}/library/sfml-graphics-d.lib
-        ${CMAKE_SOURCE_DIR}/library/sfml-network-d.lib
-        ${CMAKE_SOURCE_DIR}/library/sfml-system-d.lib
-        ${CMAKE_SOURCE_DIR}/library/sfml-window-d.lib
-    )
-else()
-    target_link_libraries(Evades
-        ${CMAKE_SOURCE_DIR}/library/sfml-audio.lib
-        ${CMAKE_SOURCE_DIR}/library/sfml-graphics.lib
-        ${CMAKE_SOURCE_DIR}/library/sfml-network.lib
-        ${CMAKE_SOURCE_DIR}/library/sfml-system.lib
-        ${CMAKE_SOURCE_DIR}/library/sfml-window.lib
-    )
-endif()
-
-include_directories(${CMAKE_SOURCE_DIR}/include)
+#include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/source)
+
+# Find SFML on Linux
+find_package(SFML COMPONENTS Graphics Window System REQUIRED)
+if(SFML_FOUND)
+    target_link_libraries(Evades PRIVATE sfml-graphics sfml-window sfml-system)
+else()
+    message(FATAL_ERROR "SFML was not found! Make sure SFML is installed and accessible.")
+endif()
 
 set_target_properties(Evades PROPERTIES 
     CXX_STANDARD 17
@@ -45,6 +33,7 @@ set_target_properties(Evades PROPERTIES
 )
 
 set_target_properties(Evades PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+
 # Create the destination directory if it doesn't exist
 file(MAKE_DIRECTORY "${RESOURCES_DEST_DIR}")
 

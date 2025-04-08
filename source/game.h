@@ -4,6 +4,7 @@
 #include <vector>
 #include <time.h>
 #include <string>
+#include <memory>
 
 #include "SFML/Graphics.hpp"
 
@@ -23,7 +24,7 @@ public:
 	float dt = 0;
 	std::shared_ptr<sf::RenderWindow> window;
 
-	Game(int x, int y);
+	Game(uint x, uint y);
 	~Game();
 
 	void logic();
@@ -32,7 +33,5 @@ public:
 
 private:
 	sf::Clock m_clock;
-	sf::Time m_previousTime = m_clock.getElapsedTime();
-	sf::Time m_currentTime;
 	utls::Timer fpsShowTimer;
 };

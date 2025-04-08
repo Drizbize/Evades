@@ -141,7 +141,7 @@ sf::Font FontManager::getLoadedFont(FontType type)
 	switch (type)
 	{
 	case FontType::Arial:
-		font.loadFromFile("Resources/Fonts/Arial.ttf");
+		font.openFromFile("Resources/Fonts/Arial.ttf");
 		break;
 	default:
 		break;
@@ -152,5 +152,5 @@ sf::Font FontManager::getLoadedFont(FontType type)
 
 float getWidthOfText(const sf::Text& text)
 {
-	return text.getLocalBounds().width;
+	return text.getLocalBounds().size.x;
 }

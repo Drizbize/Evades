@@ -1,10 +1,12 @@
 #pragma once
-#include <Windows.h>
+
 #include <fstream>
 #include <vector>
 #include <iostream>
 #include <string>
 #include <chrono>
+#include <ctime>
+#include <iomanip>
 
 #include "Service.h"
 #include "utils.h"
@@ -26,7 +28,7 @@ public:
     virtual void log(LogLevel& lvl, const std::string& log) = 0;
 
     std::string currentDateTime();
-    WORD getColorByLvl(LogLevel& lvl);
+    std::string getColorByLvl(LogLevel& lvl);
 };
 
 class ConsoleLogDriver : public ILogDriver
@@ -34,30 +36,26 @@ class ConsoleLogDriver : public ILogDriver
 public:
     void log(LogLevel& lvl, const std::string& log) override
     {
-        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-        SetConsoleTextAttribute(hConsole, getColorByLvl(lvl));
-        std::cout << currentDateTime() << " " << log << "\n";
-
-        SetConsoleTextAttribute(hConsole, 7);
+        std::cout << getColorByLvl(lvl) << currentDateTime() << " " << log << "\033[0m" << std::endl;
     }
 };
-
-/*class DebugWindowLogDriver : public ILogDriver
-{
-public:
-    void log(LogLevel& lvl, const std::string& log) override
-    {
-        Get<DebugLogWindow>().Add(log + "\n");
-    }
-};*/
 
 class FileLogDriver : public ILogDriver
 {
 public:
+    FileLogDriver(const std::string& filename) : m_filename(filename) {}
+
     void log(LogLevel& lvl, const std::string& log) override
     {
-        //std::iofile("...");
+        std::ofstream out(m_filename, std::ios::app);
+        if (out.is_open())
+        {
+            out << currentDateTime() << " " << log << std::endl;
+        }
     }
+
+private:
+    std::string m_filename;
 };
 
 class LogManager
@@ -73,8 +71,8 @@ public:
     static LogLevel getLogLvl();
 
     void log(LogLevel lvl, std::string msg);
-
     void addDriver(ILogDriver* driver);
+
 private:
     std::vector<ILogDriver*> m_drivers;
     LogLevel m_currentLoglvl;
@@ -96,6 +94,7 @@ public:
             LogManager::Debug("{" + locationName + "}: " + str(duration.count() * 1000) + " ms");
         }
     }
+
 private:
     utls::Timer* timer;
     std::string locationName;

@@ -34,7 +34,8 @@ int main()
     Wall3.loadFromFile("resources/Wall3.png");
 
     sf::Texture texture;
-    texture.create(48, 48);
+    texture.resize({48, 48});
+    
 
     sf::Sprite sp(texture);
     sp.setTexture(texture);
@@ -49,10 +50,9 @@ int main()
 
     while (evades.window->isOpen())
     {
-        sf::Event event;
-        while (evades.window->pollEvent(event))
+        while (const std::optional event = evades.window->pollEvent())
         {
-            if (event.type == sf::Event::Closed)
+            if (event->is<sf::Event::Closed>())
                 evades.window->close();
         }
 
