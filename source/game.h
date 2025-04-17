@@ -8,7 +8,7 @@
 
 #include "SFML/Graphics.hpp"
 
-#include "ConstSettings.h"
+#include "Settings.h"
 
 #include "Utils/utils.h"
 #include "Utils/LogManager.h"

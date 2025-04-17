@@ -1,4 +1,11 @@
+#include <SFML/System/Clock.hpp>
+#include <thread>
+#include <mutex>
+#include <SFML/Graphics.hpp>
+
 #include "Tween.h"
+#include "Utils/LogManager.h"
+#include "Settings.h"
 
 std::function<float(float)> getFunctionFormulaFromStyle(tweenStyle style)
 {
@@ -15,17 +22,10 @@ std::function<float(float)> getFunctionFormulaFromStyle(tweenStyle style)
     }
 }
 
-TweenService::TweenBase::TweenBase()
-{
-}
-
-TweenService::TweenBase::~TweenBase()
-{
-}
-
 TweenService::TweenService(float duraction, bool isReversed,
     std::function<void()> eventFunc_Step, std::function<void()> eventFunc_EndTween)
-    : m_duration(duraction),
+    :
+    m_duration(duraction),
     m_isReverse(isReversed), m_isActualReversed(isReversed),
     m_eventFunc_Step(eventFunc_Step), m_eventFunc_EndTween(eventFunc_EndTween)
 {
@@ -37,6 +37,7 @@ TweenService::~TweenService()
     {
         delete tweenModule;
     }
+    stop();
 }
 
 inline bool TweenService::removeLastTween()
@@ -57,40 +58,43 @@ void TweenService::setEventFunc_EndTween(std::function<void()> func)
     m_eventFunc_EndTween = func;
 }
 
-void TweenService::start()
-{
-    m_isRunning = true;
-}
-
 void TweenService::stop()
 {
     m_isRunning = false;
+    if (m_worker.joinable())
+        m_worker.join();
 }
 
-void TweenService::reset()
+void TweenService::resetAll()
 {
+    stop();
     m_time = 0;
-    m_isRunning = false;
     m_isActualReversed = m_isReverse;
     m_tweensReset();
+    LogManager::Error(str(m_time));
 }
 
-bool TweenService::play(float dt)
+void TweenService::play()
 {
-    if (!m_isRunning) return false;
-
-    m_time += dt;
-
-    if (m_time >= m_duration)
+    if (m_worker.joinable())
     {
-        m_tweensFinish();
-    }
-    else
-    {
-        m_tweensContinue();
+        m_isRunning = false;
+        m_worker.join();
+
+        m_time = 0;
+        
+        m_isActualReversed = m_isReverse;
+        for (TweenBase* tweenModule : m_tweens) {
+            tweenModule->reset();
+        }
+        LogManager::Info(str(m_time));
+
     }
 
-    return true;
+    LogManager::Debug(str(m_time));
+
+    m_isRunning = true;
+    m_worker = std::thread(&TweenService::m_workFunc, this);
 }
 
 bool TweenService::isPlaying()
@@ -149,10 +153,48 @@ void TweenService::m_tweensContinue()
 void TweenService::m_tweensReset()
 {
     for (TweenBase* tweenModule : m_tweens) {
-        tweenModule->reset();
+        tweenModule->resetAll();
     }
     if (m_eventFunc_Step)
     {
         m_eventFunc_Step();
     }
+}
+
+void TweenService::m_workFunc()
+{
+    sf::Clock clock = sf::Clock();
+    std::unique_lock<std::mutex> lk(m_workerMutex);
+
+    clock.start();
+    while (m_isRunning)
+    {
+        float dt = clock.restart().asSeconds();
+        Settings::waitByMaxFPS(dt);
+
+        m_time = m_time + dt;
+        
+        if (m_time >= m_duration)
+        {
+            m_tweensFinish();
+        }
+        else
+        {
+            m_tweensContinue();
+        }
+        lk.unlock();
+        for (TweenBase* tweenModule : m_tweens)
+        {
+            tweenModule->updateValue();
+        }
+        lk.lock();
+    }
+}
+
+TweenService::TweenBase::TweenBase()
+{
+}
+
+TweenService::TweenBase::~TweenBase()
+{
 }

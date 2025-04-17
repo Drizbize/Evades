@@ -1,4 +1,7 @@
-﻿#include "game.h"
+﻿#include "Utils/LogManager.h"
+#include "game.h"
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/Keyboard.hpp>
 
 int main()
 {
@@ -48,18 +51,41 @@ int main()
     tween.addTween(child.anchorPoint.get(), sf::Vector2f(1.f, 1.f), tweenStyle::Linear);
     tween.addTween(imPos, 500, tweenStyle::Linear);
 
+    TweenService tween2(4, true, std::bind(&Igui::update, &a));
+    tween2.addTween(a.position.get(), Udim2::fromScale(0.75f, 0.75f), tweenStyle::Cube);
+
+    tween.play();
+    //tween2.play();
+
     while (evades.window->isOpen())
     {
         while (const std::optional event = evades.window->pollEvent())
         {
             if (event->is<sf::Event::Closed>())
                 evades.window->close();
+
+            if (const auto* key = event->getIf<sf::Event::KeyPressed>())
+            {
+                if (key->scancode == sf::Keyboard::Scancode::W)
+                {
+                    tween.play();
+                    //tween2.play();
+                }
+                else if (key->scancode == sf::Keyboard::Scancode::R)
+                {
+                    tween.resetAll();
+                    //tween2.play();
+                }
+                else if (key->scancode == sf::Keyboard::Scancode::S)
+                {
+                    tween.stop();
+                }
+            }
         }
 
-        evades.logic();
+        //LogManager::Debug(str(a.position->posX.scale));
 
-        tween.start();
-        tween.play(evades.dt);
+        evades.logic();
 
         evades.window->clear(sf::Color(199, 226, 237));
 

@@ -25,6 +25,7 @@ enum class LogLevel
 class ILogDriver
 {
 public:
+    virtual ~ILogDriver() {}
     virtual void log(LogLevel& lvl, const std::string& log) = 0;
 
     std::string currentDateTime();

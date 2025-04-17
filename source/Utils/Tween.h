@@ -1,7 +1,10 @@
 #pragma once
 
+#include <atomic>
 #include <functional>
 #include <list>
+#include <thread>
+#include <mutex>
 
 enum class tweenStyle
 {
@@ -28,10 +31,9 @@ public:
     bool removeLastTween();
     void setEventFunc_Step(std::function<void()> func);
     void setEventFunc_EndTween(std::function<void()> func);
-    void start();
+    void play();
     void stop();
-    void reset();
-    bool play(float dt);
+    void resetAll();
     bool isPlaying();
     float getCurrentDuration();
 private:
@@ -46,9 +48,12 @@ private:
     bool m_isRunning = false;
     float m_time = 0;
 
+    std::mutex m_workerMutex;
+    std::thread m_worker;
     void m_tweensFinish();
     void m_tweensContinue();
     void m_tweensReset();
+    void m_workFunc();
 
     class TweenBase
     {
@@ -59,8 +64,10 @@ private:
         friend class TweenService;
 
         virtual void reset() = 0;
+        virtual void resetAll() = 0;
         virtual void tweenFinish() = 0;
-        virtual void tweenContinue(float& time) = 0;
+        virtual void tweenContinue(float time) = 0;
+        virtual void updateValue() = 0;
 
         virtual void m_genDistanation() = 0;
     };
@@ -83,6 +90,7 @@ private:
         }
     protected:
         T& m_value_ptr;
+        T m_value;
         T m_origStart, m_origEnd;
         T m_start, m_end;
         T m_distanation;
@@ -90,9 +98,18 @@ private:
         std::function<float(float)> m_styleCalcFunc;
         float m_styledDuration;
 
-        virtual void reset() override
+        virtual void resetAll() override
         {
             m_start = m_origStart;
+            m_end = m_origEnd;
+            m_value = m_origStart;
+            m_value_ptr = m_value;
+            m_genDistanation();
+        }
+
+        virtual void reset() override
+        {
+            m_start = m_value;
             m_end = m_origEnd;
             m_genDistanation();
         }
@@ -104,12 +121,17 @@ private:
             m_start = tempEnd;
             m_genDistanation();
 
-            m_value_ptr = tempEnd;
+            m_value = tempEnd;
         }
 
-        virtual void tweenContinue(float& time) override
+        virtual void tweenContinue(float time) override
         {
-            m_value_ptr = m_distanation * (m_styleCalcFunc(time) / m_styledDuration) + m_start;
+            m_value = m_distanation * (m_styleCalcFunc(time) / m_styledDuration) + m_start;
+        }
+
+        virtual void updateValue() override
+        {
+            m_value_ptr = m_value;
         }
 
         virtual void m_genDistanation() override
